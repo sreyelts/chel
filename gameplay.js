@@ -19,6 +19,9 @@ function init() {
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    // Background color for better visibility
+    scene.background = new THREE.Color(0x87CEEB); // Sky Blue color for ice rink background
     
     // Ice rink
     let rinkGeometry = new THREE.PlaneGeometry(50, 30);
@@ -40,14 +43,18 @@ function init() {
     // Players
     createPlayers();
     
-    camera.position.set(0, 20, 20);
+    // Set camera position for better viewing angle
+    camera.position.set(0, 20, 40);
     camera.lookAt(0, 0, 0);
-    
+
+    // Event listeners for controls
     window.addEventListener('keydown', (e) => {
         keys[e.key] = true;
         if (e.key === ' ') switchPlayer();
     });
     window.addEventListener('keyup', (e) => keys[e.key] = false);
+    
+    // Game timer update every second
     setInterval(updateGameTime, 1000);
 }
 
