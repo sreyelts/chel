@@ -3,45 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hockey Game</title>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.146/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/jsm/loaders/GLTFLoader.js"></script>
+    <title>3D Ice Hockey 1v1 Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+    <!-- Load Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
-<body style="margin: 0; overflow: hidden;">
-    <script>
-        let scene, camera, renderer, playerModel;
+<body>
+<script>
+    let scene, camera, renderer;
+    let player, opponent, puck;
+    let playerSpeed = 0.1;
+    let puckSpeed = { x: 0, z: 0 };
+    let keys = {};
+    let controlledPlayer = 0;
 
-        function init() {
-            // Create scene
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-            
-            // Lighting
-            let light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(5, 5, 5);
-            scene.add(light);
+    function init() {
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-            // Load the hockey player model
-            const loader = new THREE.GLTFLoader();
-            loader.load('hockey_player.glb', function (gltf) {
-                playerModel = gltf.scene;
-                playerModel.position.set(0, 0, 0);
-                scene.add(playerModel);
-            });
+        // Create Ice Rink
+        let rinkGeometry = new THREE.PlaneGeometry(50, 30);
+        let rinkMaterial = new THREE.MeshBasicMaterial({ color: 0xADD8E6, side: THREE.DoubleSide });
+        let rink = new THREE.Mesh(rinkGeometry, rinkMaterial);
+        rink.rotation.x = -Math.PI / 2;
+        scene.add(rink);
 
-            camera.position.z = 5;
-            animate();
+        // Create Players
+        createPlayers();
+
+        // Create Puck
+        createPuck();
+
+        camera.position.set(0, 20, 20);
+        camera.lookAt(0, 0, 0);
+
+        // Add Event Listeners for Controls
+        window.addEventListener('keydown', (e) => keys[e.key] = true);
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        animate();
+    }
+
+    function createPlayers() {
+        let playerGeometry = new THREE.BoxGeometry(1, 2, 1);
+        let playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.position.set(-5, 1, 0);
+        scene.add(player);
+
+        let opponentMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        opponent = new THREE.Mesh(playerGeometry, opponentMaterial);
+        opponent.position.set(5, 1, 0);
+        scene.add(opponent);
+    }
+
+    function createPuck() {
+        let puckGeometry = new THREE.CircleGeometry(0.5, 32);
+        let puckMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        puck = new THREE.Mesh(puckGeometry, puckMaterial);
+        puck.position.y = 0.1;
+        scene.add(puck);
+    }
+
+    function handlePlayerMovement() {
+        let playerObj = controlledPlayer === 0 ? player : opponent;
+
+        if (keys['w']) playerObj.position.z -= playerSpeed;
+        if (keys['s']) playerObj.position.z += playerSpeed;
+        if (keys['a']) playerObj.position.x -= playerSpeed;
+        if (keys['d']) playerObj.position.x += playerSpeed;
+    }
+
+    function handlePuck() {
+        puck.position.x += puckSpeed.x;
+        puck.position.z += puckSpeed.z;
+
+        // Simple friction for the puck
+        puckSpeed.x *= 0.99;
+        puckSpeed.z *= 0.99;
+
+        // Bounce off walls
+        if (puck.position.x < -25 || puck.position.x > 25) {
+            puckSpeed.x *= -1;
+        }
+        if (puck.position.z < -15 || puck.position.z > 15) {
+            puckSpeed.z *= -1;
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
-        }
+        // Collision with players
+        let playerObj = controlledPlayer === 0 ? player : opponent;
+        let dx = playerObj.position.x - puck.position.x;
+        let dz = playerObj.position.z - puck.position.z;
+        let distance = Math.sqrt(dx * dx + dz * dz);
 
-        init();
-    </script>
+        if (distance < 1.5) {
+            puckSpeed.x = dx * 0.1;
+            puckSpeed.z = dz * 0.1;
+        }
+    }
+
+    function switchPlayer() {
+        controlledPlayer = controlledPlayer === 0 ? 1 : 0;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        handlePlayerMovement();
+        handlePuck();
+        renderer.render(scene, camera);
+    }
+
+    init();
+</script>
 </body>
 </html>
