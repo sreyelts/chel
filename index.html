@@ -3,14 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chel</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { display: block; }
-    </style>
+    <title>Hockey Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.146/examples/jsm/loaders/GLTFLoader.js"></script>
 </head>
-<body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="gameplay.js"></script>
+<body style="margin: 0; overflow: hidden;">
+    <script>
+        let scene, camera, renderer, playerModel;
+
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+            
+            // Lighting
+            let light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5);
+            scene.add(light);
+
+            // Load the hockey player model
+            const loader = new THREE.GLTFLoader();
+            loader.load('hockey_player.glb', function (gltf) {
+                playerModel = gltf.scene;
+                playerModel.position.set(0, 0, 0);
+                scene.add(playerModel);
+            });
+
+            camera.position.z = 5;
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
 </body>
 </html>
