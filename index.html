@@ -10,6 +10,8 @@
     </style>
     <!-- Load Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Load GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 <script>
@@ -19,6 +21,8 @@
     let puckSpeed = { x: 0, z: 0 };
     let keys = {};
     let controlledPlayer = 0;
+
+    let playerModel, mixer;
 
     function init() {
         scene = new THREE.Scene();
@@ -34,90 +38,102 @@
         rink.rotation.x = -Math.PI / 2;
         scene.add(rink);
 
-        // Create Players
-        createPlayers();
-
         // Create Puck
         createPuck();
+
+        // Load Player Model
+        loadPlayerModel();
+
+        // Create Opponent (placeholder cube for now)
+        createOpponent();
 
         camera.position.set(0, 20, 20);
         camera.lookAt(0, 0, 0);
 
         // Add Event Listeners for Controls
-        window.addEventListener('keydown', (e) => keys[e.key] = true);
-        window.addEventListener('keyup', (e) => keys[e.key] = false);
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
 
         animate();
     }
 
-    function createPlayers() {
-        let playerGeometry = new THREE.BoxGeometry(1, 2, 1);
-        let playerMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        player = new THREE.Mesh(playerGeometry, playerMaterial);
-        player.position.set(-5, 1, 0);
-        scene.add(player);
+    // Load the Player Model (hockey_player.glb)
+    function loadPlayerModel() {
+        let loader = new THREE.GLTFLoader();
+        loader.load('hockey_player.glb', (gltf) => {
+            playerModel = gltf.scene;
+            playerModel.scale.set(1, 1, 1);
+            playerModel.position.set(0, 0, 0);
+            scene.add(playerModel);
 
-        let opponentMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-        opponent = new THREE.Mesh(playerGeometry, opponentMaterial);
-        opponent.position.set(5, 1, 0);
-        scene.add(opponent);
+            // Check for animations
+            if (gltf.animations.length > 0) {
+                mixer = new THREE.AnimationMixer(playerModel);
+                gltf.animations.forEach((clip) => {
+                    mixer.clipAction(clip).play();
+                });
+            }
+        });
     }
 
+    // Create the Puck
     function createPuck() {
         let puckGeometry = new THREE.CircleGeometry(0.5, 32);
         let puckMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
         puck = new THREE.Mesh(puckGeometry, puckMaterial);
-        puck.position.y = 0.1;
+        puck.position.set(0, 0.1, 0);
         scene.add(puck);
     }
 
+    // Create Opponent (simple placeholder cube for now)
+    function createOpponent() {
+        let opponentGeometry = new THREE.BoxGeometry(1, 2, 1);
+        let opponentMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+        opponent = new THREE.Mesh(opponentGeometry, opponentMaterial);
+        opponent.position.set(5, 1, 0);
+        scene.add(opponent);
+    }
+
+    // Handle Player Movement
     function handlePlayerMovement() {
-        let playerObj = controlledPlayer === 0 ? player : opponent;
+        if (!playerModel) return; // Wait for player model to load
 
-        if (keys['w']) playerObj.position.z -= playerSpeed;
-        if (keys['s']) playerObj.position.z += playerSpeed;
-        if (keys['a']) playerObj.position.x -= playerSpeed;
-        if (keys['d']) playerObj.position.x += playerSpeed;
-    }
+        let speed = playerSpeed;
+        let playerPosition = playerModel.position;
 
-    function handlePuck() {
-        puck.position.x += puckSpeed.x;
-        puck.position.z += puckSpeed.z;
+        if (keys['w']) playerPosition.z -= speed;
+        if (keys['s']) playerPosition.z += speed;
+        if (keys['a']) playerPosition.x -= speed;
+        if (keys['d']) playerPosition.x += speed;
 
-        // Simple friction for the puck
-        puckSpeed.x *= 0.99;
-        puckSpeed.z *= 0.99;
-
-        // Bounce off walls
-        if (puck.position.x < -25 || puck.position.x > 25) {
-            puckSpeed.x *= -1;
-        }
-        if (puck.position.z < -15 || puck.position.z > 15) {
-            puckSpeed.z *= -1;
-        }
-
-        // Collision with players
-        let playerObj = controlledPlayer === 0 ? player : opponent;
-        let dx = playerObj.position.x - puck.position.x;
-        let dz = playerObj.position.z - puck.position.z;
-        let distance = Math.sqrt(dx * dx + dz * dz);
-
-        if (distance < 1.5) {
-            puckSpeed.x = dx * 0.1;
-            puckSpeed.z = dz * 0.1;
+        // Apply skating animation (if available)
+        if (mixer) {
+            mixer.update(0.01); // Update animation mixer
         }
     }
 
-    function switchPlayer() {
-        controlledPlayer = controlledPlayer === 0 ? 1 : 0;
-    }
-
+    // Update the Game Scene
     function animate() {
         requestAnimationFrame(animate);
 
         handlePlayerMovement();
-        handlePuck();
+        updatePuck();
+
         renderer.render(scene, camera);
+    }
+
+    // Update the puck position
+    function updatePuck() {
+        puck.position.x += puckSpeed.x;
+        puck.position.z += puckSpeed.z;
+
+        // Bounce off walls
+        if (puck.position.x < -25 || puck.position.x > 25) puckSpeed.x *= -1;
+        if (puck.position.z < -15 || puck.position.z > 15) puckSpeed.z *= -1;
     }
 
     init();
