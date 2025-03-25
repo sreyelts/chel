@@ -3,10 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>game debugger</title>
+    <title>3D Ice Hockey 1v1 Game</title>
     <style>
         body { margin: 0; overflow: hidden; }
         canvas { display: block; }
+        #debugText {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-family: Arial, sans-serif;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 5px;
+        }
     </style>
     <!-- Load Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -14,6 +24,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/loaders/GLTFLoader.js"></script>
 </head>
 <body>
+    <div id="debugText">Initializing...</div>
 <script>
     let scene, camera, renderer;
     let player, puck;
@@ -23,8 +34,14 @@
     let controlledPlayer = 0;
 
     let playerModel, mixer;
+    let debugText = document.getElementById('debugText');
+
+    function updateDebugText(message) {
+        debugText.textContent = message;
+    }
 
     function init() {
+        updateDebugText("Initializing scene...");
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer();
@@ -65,13 +82,9 @@
         animate();
     }
 
-    // Function to change the background color when there's an error
-    function changeBackgroundColor(color) {
-        document.body.style.backgroundColor = color;
-    }
-
     // Create Lighting
     function createLighting() {
+        updateDebugText("Creating lighting...");
         let ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
         scene.add(ambientLight);
 
@@ -82,31 +95,35 @@
 
     // Load the Player Model (hockey_player.glb)
     function loadPlayerModel() {
+        updateDebugText("Loading player model...");
         let loader = new THREE.GLTFLoader();
         loader.load('hockey_player.glb', (gltf) => {
             playerModel = gltf.scene;
+            updateDebugText("Player model loaded successfully.");
             playerModel.scale.set(1, 1, 1);
             playerModel.position.set(0, 0, 0);
             scene.add(playerModel);
 
             // Check for animations
             if (gltf.animations.length > 0) {
+                updateDebugText("Animations found!");
                 mixer = new THREE.AnimationMixer(playerModel);
                 gltf.animations.forEach((clip) => {
                     mixer.clipAction(clip).play();
                 });
             } else {
-                console.error("No animations found in the model.");
-                changeBackgroundColor('red'); // Change background to red if no animations
+                updateDebugText("No animations found.");
+                document.body.style.backgroundColor = 'red'; // Change background to red if no animations
             }
         }, undefined, (error) => {
-            console.error('Error loading the player model:', error);
-            changeBackgroundColor('red'); // Change background to red on error
+            updateDebugText("Error loading player model: " + error);
+            document.body.style.backgroundColor = 'red'; // Change background to red on error
         });
     }
 
     // Create the Puck
     function createPuck() {
+        updateDebugText("Creating puck...");
         let puckGeometry = new THREE.CircleGeometry(0.5, 32);
         let puckMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
         puck = new THREE.Mesh(puckGeometry, puckMaterial);
@@ -116,6 +133,7 @@
 
     // Create Opponent (simple placeholder cube for now)
     function createOpponent() {
+        updateDebugText("Creating opponent...");
         let opponentGeometry = new THREE.BoxGeometry(1, 2, 1);
         let opponentMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
         let opponent = new THREE.Mesh(opponentGeometry, opponentMaterial);
