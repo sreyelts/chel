@@ -16,7 +16,7 @@
 <body>
 <script>
     let scene, camera, renderer;
-    let player, opponent, puck;
+    let player, puck;
     let playerSpeed = 0.1;
     let puckSpeed = { x: 0, z: 0 };
     let keys = {};
@@ -44,11 +44,15 @@
         // Load Player Model
         loadPlayerModel();
 
+        // Create Lighting
+        createLighting();
+
         // Create Opponent (placeholder cube for now)
         createOpponent();
 
-        camera.position.set(0, 20, 20);
-        camera.lookAt(0, 0, 0);
+        // Set Camera Position
+        camera.position.set(0, 5, 15);
+        camera.lookAt(0, 1, 0); // Looking at the center of the rink
 
         // Add Event Listeners for Controls
         window.addEventListener('keydown', (e) => {
@@ -59,6 +63,16 @@
         });
 
         animate();
+    }
+
+    // Create Lighting
+    function createLighting() {
+        let ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+        scene.add(ambientLight);
+
+        let directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 5).normalize();
+        scene.add(directionalLight);
     }
 
     // Load the Player Model (hockey_player.glb)
@@ -77,6 +91,8 @@
                     mixer.clipAction(clip).play();
                 });
             }
+        }, undefined, (error) => {
+            console.error('Error loading the player model:', error);
         });
     }
 
@@ -93,7 +109,7 @@
     function createOpponent() {
         let opponentGeometry = new THREE.BoxGeometry(1, 2, 1);
         let opponentMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-        opponent = new THREE.Mesh(opponentGeometry, opponentMaterial);
+        let opponent = new THREE.Mesh(opponentGeometry, opponentMaterial);
         opponent.position.set(5, 1, 0);
         scene.add(opponent);
     }
