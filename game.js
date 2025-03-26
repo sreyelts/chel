@@ -1,61 +1,82 @@
-// Display errors on screen
-function showError(message) {
-    let errorLog = document.getElementById("error-log");
-    if (!errorLog) {
-        errorLog = document.createElement("div");
-        errorLog.id = "error-log";
-        errorLog.style.position = "absolute";
-        errorLog.style.top = "10px";
-        errorLog.style.left = "10px";
-        errorLog.style.color = "red";
-        errorLog.style.fontSize = "16px";
-        errorLog.style.background = "white";
-        errorLog.style.padding = "10px";
-        errorLog.style.display = "block";
-        document.body.appendChild(errorLog);
-    }
-    errorLog.innerText = "Error: " + message;
+// Initialize Three.js Scene
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Player controls
+const player = { x: 0, y: 1.5, z: 0, speed: 0.1 };
+const keys = {};
+
+// Setup basic environment
+const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(50, 50),
+    new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// Player object
+const playerObj = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 1, 0.5),
+    new THREE.MeshBasicMaterial({ color: 0xff0000 })
+);
+playerObj.position.set(player.x, player.y, player.z);
+scene.add(playerObj);
+
+// Shooting setup
+const bullets = [];
+const bulletSpeed = 0.2;
+
+// Movement & Looking
+document.addEventListener("keydown", (e) => (keys[e.code] = true));
+document.addEventListener("keyup", (e) => (keys[e.code] = false));
+
+function updateMovement() {
+    if (keys["KeyW"]) playerObj.position.z -= player.speed;
+    if (keys["KeyS"]) playerObj.position.z += player.speed;
+    if (keys["KeyA"]) playerObj.position.x -= player.speed;
+    if (keys["KeyD"]) playerObj.position.x += player.speed;
+
+    // Arrow keys for looking
+    if (keys["ArrowLeft"]) camera.rotation.y += 0.02;
+    if (keys["ArrowRight"]) camera.rotation.y -= 0.02;
 }
 
-// Wrap everything in a try-catch
-try {
-    // Initialize Scene, Camera, and Renderer
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+// Mouse look
+document.addEventListener("mousemove", (e) => {
+    camera.rotation.y -= e.movementX * 0.002;
+    camera.rotation.x -= e.movementY * 0.002;
+});
 
-    // Lighting
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5, 10, 5).normalize();
-    scene.add(light);
-
-    // Load Player Model
-    const loader = new THREE.GLTFLoader(); // FIX: Proper constructor use
-    loader.load(
-        'hockey_player.glb',
-        function (gltf) {
-            const player = gltf.scene;
-            player.scale.set(1, 1, 1);
-            player.position.set(0, 0, 0);
-            scene.add(player);
-        },
-        undefined,
-        function (error) {
-            showError("Failed to load player model. Check file path.");
-        }
-    );
-
-    // Set Camera Position
-    camera.position.z = 5;
-
-    // Animation Loop
-    function animate() {
-        requestAnimationFrame(animate);
-        renderer.render(scene, camera);
+// Shooting
+document.addEventListener("keydown", (e) => {
+    if (e.code === "ShiftLeft") {
+        const bullet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1),
+            new THREE.MeshBasicMaterial({ color: 0xffff00 })
+        );
+        bullet.position.set(playerObj.position.x, playerObj.position.y, playerObj.position.z);
+        bullets.push({ mesh: bullet, direction: camera.rotation.y });
+        scene.add(bullet);
     }
-    animate();
-} catch (error) {
-    showError(error.message);
+});
+
+// Bullet movement
+function updateBullets() {
+    for (let i = 0; i < bullets.length; i++) {
+        bullets[i].mesh.position.x -= Math.sin(bullets[i].direction) * bulletSpeed;
+        bullets[i].mesh.position.z -= Math.cos(bullets[i].direction) * bulletSpeed;
+    }
 }
+
+// Game Loop
+function animate() {
+    requestAnimationFrame(animate);
+    updateMovement();
+    updateBullets();
+    renderer.render(scene, camera);
+}
+
+animate();
