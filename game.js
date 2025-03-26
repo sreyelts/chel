@@ -38,6 +38,9 @@ document.addEventListener('keyup', (event) => {
     keys[event.code] = false;
 });
 
+// Variables for player rotation
+let rotationSpeed = 0.05;
+
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
@@ -61,9 +64,10 @@ function animate() {
     camera.position.x = player.position.x;
     camera.position.z = player.position.z + 5;
 
-    // Rotate the player model
-    player.rotation.x += 0.01;
-    player.rotation.y += 0.01;
+    // Rotation logic (only rotate when moving)
+    if (moveForward || moveBackward || moveLeft || moveRight) {
+        player.rotation.y += rotationSpeed; // Rotate the player when moving
+    }
 
     // Render the scene
     renderer.render(scene, camera);
