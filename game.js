@@ -1,44 +1,61 @@
-// Set up scene, camera, and renderer
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-// Lighting
-const light = new THREE.AmbientLight(0xffffff, 1);
-scene.add(light);
-
-// Load hockey player model
-const loader = new THREE.GLTFLoader();
-let player;
-loader.load('hockey_player.glb', function (gltf) {
-    player = gltf.scene;
-    player.position.set(0, 0, 0);
-    scene.add(player);
-}, undefined, function (error) {
-    console.error("Error loading model:", error);
-});
-
-// Camera positioning
-camera.position.set(0, 2, 5);
-camera.lookAt(0, 0, 0);
-
-// Handle player movement
-const keys = {};
-window.addEventListener('keydown', (e) => keys[e.key] = true);
-window.addEventListener('keyup', (e) => keys[e.key] = false);
-
-function animate() {
-    requestAnimationFrame(animate);
-
-    if (player) {
-        if (keys["ArrowUp"]) player.position.z -= 0.1; // Forward
-        if (keys["ArrowDown"]) player.position.z += 0.1; // Backward
-        if (keys["ArrowLeft"]) player.position.x -= 0.1; // Left
-        if (keys["ArrowRight"]) player.position.x += 0.1; // Right
+// Display errors on screen
+function showError(message) {
+    let errorLog = document.getElementById("error-log");
+    if (!errorLog) {
+        errorLog = document.createElement("div");
+        errorLog.id = "error-log";
+        errorLog.style.position = "absolute";
+        errorLog.style.top = "10px";
+        errorLog.style.left = "10px";
+        errorLog.style.color = "red";
+        errorLog.style.fontSize = "16px";
+        errorLog.style.background = "white";
+        errorLog.style.padding = "10px";
+        errorLog.style.display = "block";
+        document.body.appendChild(errorLog);
     }
-
-    renderer.render(scene, camera);
+    errorLog.innerText = "Error: " + message;
 }
-animate();
+
+// Wrap everything in a try-catch
+try {
+    // Initialize Scene, Camera, and Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Lighting
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 10, 5).normalize();
+    scene.add(light);
+
+    // Load Player Model
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+        'hockey_player.glb',
+        function (gltf) {
+            const player = gltf.scene;
+            player.scale.set(1, 1, 1); // Adjust scale
+            player.position.set(0, 0, 0); // Set position
+            scene.add(player);
+        },
+        undefined,
+        function (error) {
+            showError("Failed to load player model. Check file path.");
+        }
+    );
+
+    // Set Camera Position
+    camera.position.z = 5;
+
+    // Animation Loop
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    animate();
+} catch (error) {
+    showError(error.message);
+}
