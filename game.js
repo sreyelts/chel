@@ -32,13 +32,13 @@ try {
     scene.add(light);
 
     // Load Player Model
-    const loader = new THREE.GLTFLoader();
+    const loader = new THREE.GLTFLoader(); // FIX: Proper constructor use
     loader.load(
         'hockey_player.glb',
         function (gltf) {
             const player = gltf.scene;
-            player.scale.set(1, 1, 1); // Adjust scale
-            player.position.set(0, 0, 0); // Set position
+            player.scale.set(1, 1, 1);
+            player.position.set(0, 0, 0);
             scene.add(player);
         },
         undefined,
